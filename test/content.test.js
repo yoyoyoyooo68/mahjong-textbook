@@ -40,6 +40,9 @@ function chapterTexts() {
 /** @param {Problem} p */
 const meldCount = (p) => p.scene?.melds?.length ?? 0;
 
+/** @param {Problem} p 相手の河と鳴き（まとめて） */
+const othersText = (p) => (p.scene?.others ?? []).flatMap((o) => [o.river, ...(o.melds ?? [])]);
+
 /** @param {Problem} p 手牌 + ツモ */
 const fullHand = (p) => `${p.scene?.hand ?? ''}${p.scene?.draw ?? ''}`;
 
@@ -99,10 +102,18 @@ test('局面: 同じ牌は4枚まで、手牌の枚数が正しい', () => {
       s.discards ?? '',
       ...(s.melds ?? []),
       ...(s.doraIndicators ?? []),
+      ...othersText(p),
     );
     for (const [k, n] of counts.entries()) assert.ok(n <= 4, `${p.id}: ${kindToken(k)} が${n}枚`);
     const reds = tokensOf(
-      `${fullHand(p)}${(s.melds ?? []).join('')}${(s.doraIndicators ?? []).join('')}`,
+      [
+        fullHand(p),
+        p.win?.tile ?? '',
+        s.discards ?? '',
+        ...(s.melds ?? []),
+        ...(s.doraIndicators ?? []),
+        ...othersText(p),
+      ].join(''),
     ).filter((t) => t.startsWith('0'));
     assert.equal(new Set(reds).size, reds.length, `${p.id}: 赤五が重複`);
     // 赤五ありのルールなので、赤でない5は各色3枚まで
@@ -113,6 +124,7 @@ test('局面: 同じ牌は4枚まで、手牌の枚数が正しい', () => {
         s.discards ?? '',
         ...(s.melds ?? []),
         ...(s.doraIndicators ?? []),
+        ...othersText(p),
       ].join(''),
     );
     for (const suit of ['m', 'p', 's']) {
@@ -125,10 +137,16 @@ test('局面: 同じ牌は4枚まで、手牌の枚数が正しい', () => {
 
     const n = tokensOf(fullHand(p)).length + meldCount(p) * 3;
     const expected = p.type === 'machi' || p.win ? 13 : 14;
-    if (['agari', 'machi', 'nanikiru'].includes(p.type) || p.win) {
+    if (['agari', 'machi', 'nanikiru', 'anzen'].includes(p.type) || p.win) {
       assert.equal(n, expected, `${p.id}: 手牌が${n}枚（副露は3枚と数える）`);
     }
-    if (p.type === 'nanikiru') assert.ok(s.draw, `${p.id}: 何切るはツモ牌を書く`);
+    if (p.type === 'nanikiru' || p.type === 'anzen') assert.ok(s.draw, `${p.id}: 何切るはツモ牌を書く`);
+    for (const o of s.others ?? []) {
+      if (o.riichiAt !== undefined) {
+        const n = tokensOf(o.river).length;
+        assert.ok(o.riichiAt >= 0 && o.riichiAt < n, `${p.id}: riichiAt が河の外`);
+      }
+    }
   }
 });
 
@@ -262,5 +280,43 @@ test('2択の決まった問題: テンパイ・ロンできるか（フリテ�
       assert.ok(p.win, `${p.id}: 和了れるかの問題は win を書く`);
       checkPair(p, '和了れる', '和了れない', (yakuIdsOf({ ...s, win: p.win }) ?? []).length > 0);
     }
+  }
+});
+
+test('安全牌: 「現物」と書いた牌がリーチした相手の河にある', () => {
+  for (const p of problems) {
+    const riichiRivers = (p.scene?.others ?? []).filter((o) => o.riichiAt !== undefined);
+    for (const c of p.choices ?? []) {
+      if (c.claims?.genbutsu === undefined) continue;
+      assert.ok(riichiRivers.length > 0, `${p.id}: 現物を書くならリーチした相手を書く`);
+      const kind = countsOf(c.answer).findIndex((n) => n > 0);
+      const inRiver = riichiRivers.some((o) => countsOf(o.river)[kind] > 0);
+      assert.equal(
+        inRiver,
+        c.claims.genbutsu,
+        `${p.id}: ${c.answer} は現物${inRiver ? 'です' : 'ではありません'}`,
+      );
+    }
+    if (p.type === 'anzen') {
+      assert.ok(riichiRivers.length > 0, `${p.id}: 安全牌の問題はリーチした相手を書く`);
+      for (const c of (p.choices ?? []).filter((x) => x.grade === 'best')) {
+        assert.ok(c.claims?.genbutsu !== undefined, `${p.id}: 安全牌の問題の最善には claims.genbutsu を書く`);
+      }
+    }
+  }
+});
+
+test('リーチするか: 門前でテンパイしている13枚の手', () => {
+  for (const p of problems) {
+    if (!p.choices?.some((c) => c.answer === 'リーチする')) continue;
+    const s = p.scene;
+    assert.ok(s, `${p.id}: 局面がない`);
+    assert.equal(meldCount(p), 0, `${p.id}: 鳴いているとリーチできない`);
+    assert.equal(tokensOf(s.hand).length, 13, `${p.id}: リーチするかの手牌は切ったあとの13枚`);
+    assert.equal(shanten(countsOf(s.hand), 0), 0, `${p.id}: テンパイしていない`);
+    assert.ok(
+      p.choices.some((c) => c.answer === 'リーチしない'),
+      `${p.id}: 選択肢「リーチしない」がない`,
+    );
   }
 });

@@ -5,6 +5,12 @@ import { CHAPTER as c12 } from './level1/1-2.js';
 import { CHAPTER as c13 } from './level1/1-3.js';
 import { CHAPTER as c14 } from './level1/1-4.js';
 import { CHAPTER as c15 } from './level1/1-5.js';
+import { CHAPTER as c21 } from './level2/2-1.js';
+import { CHAPTER as c22 } from './level2/2-2.js';
+import { CHAPTER as c23 } from './level2/2-3.js';
+import { CHAPTER as c24 } from './level2/2-4.js';
+import { CHAPTER as c25 } from './level2/2-5.js';
+import { CHAPTER as c26 } from './level2/2-6.js';
 
 /** @typedef {import('./types.js').Level} Level */
 /** @typedef {import('./types.js').Chapter} Chapter */
@@ -13,7 +19,7 @@ import { CHAPTER as c15 } from './level1/1-5.js';
 /** @type {readonly Level[]} */
 export const LEVELS = Object.freeze([
   { id: 1, title: '超初級', theme: '麻雀ってどんなゲーム？', chapters: [c11, c12, c13, c14, c15] },
-  { id: 2, title: '初級', theme: '和了れる人になる', chapters: [] },
+  { id: 2, title: '初級', theme: '和了れる人になる', chapters: [c21, c22, c23, c24, c25, c26] },
   { id: 3, title: '中級', theme: '守る・鳴く・手を組む', chapters: [] },
   { id: 4, title: '中上級', theme: '押すか、降りるか', chapters: [] },
   { id: 5, title: '上級', theme: '相手を見て戦う', chapters: [] },

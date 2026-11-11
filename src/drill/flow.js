@@ -15,10 +15,11 @@ import { gradeChoice, gradeTile, gradeTiles } from './grade.js';
  */
 
 /**
- * @typedef {object} Run レッスンかテストの途中の状態
- * @property {'lesson' | 'test'} mode
- * @property {string} chapterId
- * @property {number} lessonIndex テストのときは -1
+ * @typedef {object} Run レッスン・テスト・復習・反復練習の途中の状態
+ * @property {'lesson' | 'test' | 'review' | 'drill'} mode
+ * @property {string} chapterId 復習・反復練習のときは ''
+ * @property {number} lessonIndex レッスン以外は -1
+ * @property {string} [drill] 反復練習の種類
  * @property {Step[]} steps
  * @property {number} index 今の画面
  * @property {(Verdict | null)[]} verdicts 画面ごとの答えの結果（問題でない画面は null）
@@ -53,7 +54,45 @@ export function startTest(chapter) {
 }
 
 /**
- * @param {'lesson' | 'test'} mode
+ * 復習（今日の分の問題を順に）。
+ * @param {readonly Problem[]} problems
+ * @returns {Run}
+ */
+export function startReview(problems) {
+  if (problems.length === 0) throw new RangeError('復習する問題がありません');
+  const steps = problems.map((problem) => /** @type {Step} */ ({ type: 'problem', problem }));
+  return fresh('review', '', -1, steps);
+}
+
+/**
+ * 反復練習。1問ずつ appendProblem で足していく。
+ * @param {string} kind
+ * @param {Problem} first
+ * @returns {Run}
+ */
+export function startDrill(kind, first) {
+  return { ...fresh('drill', '', -1, [{ type: 'problem', problem: first }]), drill: kind };
+}
+
+/**
+ * 反復練習で、次の問題を足して進む。今の問題に答えていなければ何もしない。
+ * @param {Run} run
+ * @param {Problem} problem
+ * @returns {Run}
+ */
+export function appendProblem(run, problem) {
+  if (!canAdvance(run)) return run;
+  return {
+    ...run,
+    steps: [...run.steps, { type: 'problem', problem }],
+    verdicts: [...run.verdicts, null],
+    index: run.steps.length,
+    selected: [],
+  };
+}
+
+/**
+ * @param {Run['mode']} mode
  * @param {string} chapterId
  * @param {number} lessonIndex
  * @param {Step[]} steps
@@ -94,7 +133,7 @@ export function advance(run) {
  * @returns {Run}
  */
 export function back(run) {
-  if (run.index === 0 || run.mode === 'test') return run;
+  if (run.index === 0 || run.mode !== 'lesson') return run;
   return { ...run, index: run.index - 1, selected: [] };
 }
 

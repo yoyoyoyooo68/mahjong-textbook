@@ -42,7 +42,7 @@ jobs:
       - name: 配信するファイルだけを集める
         run: |
           mkdir _site
-          cp -r index.html src styles _site/
+          cp -r index.html sw.js manifest.webmanifest icons src styles _site/
       - uses: actions/upload-pages-artifact@v5
         with:
           path: _site

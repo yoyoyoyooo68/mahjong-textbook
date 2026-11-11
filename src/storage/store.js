@@ -1,9 +1,13 @@
 // 進み具合の保存。localStorage に version 付きで置く。読めない・壊れているときは初期状態に戻す。
 
+import { POINTS } from '../drill/grade.js';
+import { updateBox } from '../drill/review.js';
+
 /** @typedef {import('../content/types.js').Grade} Grade */
+/** @typedef {import('../drill/review.js').Box} Box */
 
 export const STORE_KEY = 'mahjong-textbook';
-export const STORE_VERSION = 1;
+export const STORE_VERSION = 2;
 
 /**
  * @typedef {object} ChapterRecord
@@ -13,7 +17,13 @@ export const STORE_VERSION = 1;
  */
 
 /**
- * @typedef {object} AnswerRecord 問題ごとの記録（段階3の復習と成績で使う）
+ * @typedef {object} TypeStat 種類ごとの成績
+ * @property {number} n 答えた数
+ * @property {number} points 得点の合計（最善1・悪くない0.5・悪手0）
+ */
+
+/**
+ * @typedef {object} AnswerRecord 問題ごとの記録
  * @property {Grade} last 最後の評価
  * @property {number} count 答えた回数
  * @property {number} okStreak 「悪くない」が続いた回数
@@ -26,6 +36,9 @@ export const STORE_VERSION = 1;
  * @property {Record<string, ChapterRecord>} chapters
  * @property {Record<string, AnswerRecord>} answers
  * @property {string[]} days 学習した日（"2026-11-11"。新しい順に最大400日）
+ * @property {Box} box 復習の箱
+ * @property {Record<string, TypeStat>} typeStats 教科書の問題の、種類（DrillType）ごとの成績
+ * @property {Record<string, TypeStat>} drillStats 反復練習（自動生成）の、種類ごとの成績
  * @property {{ largeText: boolean }} settings
  */
 
@@ -39,6 +52,9 @@ export function defaultStore() {
     chapters: {},
     answers: {},
     days: [],
+    box: {},
+    typeStats: {},
+    drillStats: {},
     settings: { largeText: false },
   };
 }
@@ -55,16 +71,22 @@ const isStrings = (v) => Array.isArray(v) && v.every((s) => typeof s === 'string
  * @returns {Store | null}
  */
 export function migrate(raw) {
-  if (!isObject(raw) || raw.version !== STORE_VERSION) return null;
+  // 版1（段階2）には復習の箱と成績がない。中身はそのまま引き継ぐ
+  if (!isObject(raw) || (raw.version !== STORE_VERSION && raw.version !== 1)) return null;
   if (!isStrings(raw.lessonsDone) || !isStrings(raw.days)) return null;
   if (!isObject(raw.chapters) || !isObject(raw.answers) || !isObject(raw.settings)) return null;
   const base = defaultStore();
+  /** @param {unknown} v */
+  const record = (v) => (isObject(v) ? v : {});
   return {
     ...base,
     lessonsDone: raw.lessonsDone,
     days: raw.days,
     chapters: /** @type {Record<string, ChapterRecord>} */ (raw.chapters),
     answers: /** @type {Record<string, AnswerRecord>} */ (raw.answers),
+    box: /** @type {Box} */ (record(raw.box)),
+    typeStats: /** @type {Record<string, TypeStat>} */ (record(raw.typeStats)),
+    drillStats: /** @type {Record<string, TypeStat>} */ (record(raw.drillStats)),
     settings: { ...base.settings, largeText: raw.settings.largeText === true },
   };
 }
@@ -114,15 +136,34 @@ export function dayKey(date) {
 }
 
 /**
- * 1問答えたことを記録する。その日を学習した日に入れる。
+ * その日を学習した日に入れる。
+ * @param {string[]} days
+ * @param {string} day
+ */
+const withDay = (days, day) => (days[0] === day ? days : [day, ...days].slice(0, 400));
+
+/**
+ * @param {Record<string, TypeStat>} stats
+ * @param {string} type
+ * @param {Grade} grade
+ * @returns {Record<string, TypeStat>}
+ */
+function addStat(stats, type, grade) {
+  const prev = stats[type] ?? { n: 0, points: 0 };
+  return { ...stats, [type]: { n: prev.n + 1, points: prev.points + POINTS[grade] } };
+}
+
+/**
+ * 教科書の問題に1問答えたことを記録する。復習の箱・種類別の成績・学習した日も更新する。
  * @param {Store} store
- * @param {string} problemId
+ * @param {{ id: string, type: string }} problem
  * @param {Grade} grade
  * @param {Date} now
+ * @param {{ inReview?: boolean }} [options] 復習として答えたか
  * @returns {Store}
  */
-export function recordAnswer(store, problemId, grade, now) {
-  const prev = store.answers[problemId];
+export function recordAnswer(store, problem, grade, now, options = {}) {
+  const prev = store.answers[problem.id];
   /** @type {AnswerRecord} */
   const next = {
     last: grade,
@@ -130,8 +171,33 @@ export function recordAnswer(store, problemId, grade, now) {
     okStreak: grade === 'ok' ? (prev?.okStreak ?? 0) + 1 : 0,
   };
   const day = dayKey(now);
-  const days = store.days[0] === day ? store.days : [day, ...store.days].slice(0, 400);
-  return { ...store, answers: { ...store.answers, [problemId]: next }, days };
+  return {
+    ...store,
+    answers: { ...store.answers, [problem.id]: next },
+    days: withDay(store.days, day),
+    box: updateBox(store.box, problem.id, grade, {
+      inReview: options.inReview === true,
+      okStreak: next.okStreak,
+      today: day,
+    }),
+    typeStats: addStat(store.typeStats, problem.type, grade),
+  };
+}
+
+/**
+ * 反復練習（自動生成の問題）に1問答えたことを記録する。復習の箱には入れない。
+ * @param {Store} store
+ * @param {string} type
+ * @param {Grade} grade
+ * @param {Date} now
+ * @returns {Store}
+ */
+export function recordDrill(store, type, grade, now) {
+  return {
+    ...store,
+    days: withDay(store.days, dayKey(now)),
+    drillStats: addStat(store.drillStats, type, grade),
+  };
 }
 
 /**

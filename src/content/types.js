@@ -10,13 +10,15 @@
 /**
  * ドリルの種類。成績の種類別集計に使う。
  * rule は牌の名前・ルール・用語など、答えが1つに決まる基礎知識（正解・不正解の2段階で表示）。
- * @typedef {'agari' | 'machi' | 'yaku' | 'nanikiru' | 'oshihiki' | 'naki' | 'anzen' | 'rule'} DrillType
+ * riichi はテンパイしたときにリーチするかの判断。
+ * @typedef {'agari' | 'machi' | 'yaku' | 'nanikiru' | 'oshihiki' | 'naki' | 'anzen' | 'riichi' | 'rule'} DrillType
  */
 
 /**
  * @typedef {object} Claims 理由に書いた数字。検算テストが計算と突き合わせる
  * @property {number} [shanten] その牌を切ったあとのシャンテン数（0 = テンパイ）
  * @property {number} [ukeire] その牌を切ったあとの受け入れ枚数（自分の手牌とドラ表示牌だけを見えている牌として数える）
+ * @property {boolean} [genbutsu] その牌がリーチした相手の河にあるか（現物か）
  */
 
 /**
@@ -39,7 +41,15 @@
  * @property {string} [round] 局（"東1局" など）
  * @property {number[]} [scores] 点数（自分・下家・対面・上家）
  * @property {'east' | 'south'} [roundWind] 場風（役の検算に使う。省略時は東）
+ * @property {Other[]} [others] 相手の河（リーチ・鳴き）。上の章で使う
  */
+
+/**
+ * @typedef {object} Other 相手1人の様子
+ * @property {'shimocha' | 'toimen' | 'kamicha'} who 下家・対面・上家
+ * @property {string} river 河（捨てた順）
+ * @property {number} [riichiAt] リーチを宣言した牌が river の何枚目か（0始まり）。書けばリーチ中
+ * @property {string[]} [melds] 鳴いた面子
 
 /**
  * @typedef {object} Win 和了の場面（役の問題）。scene.hand は和了牌を除いた 13 - 3×副露 枚

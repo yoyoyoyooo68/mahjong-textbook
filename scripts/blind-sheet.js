@@ -5,6 +5,7 @@ import { LEVELS } from '../src/content/index.js';
 import { choiceOrder } from '../src/drill/grade.js';
 
 const SEATS = { east: '東', south: '南', west: '西', north: '北' };
+const WHO = { shimocha: '下家', toimen: '対面', kamicha: '上家' };
 const target = process.argv[2] ?? '1';
 
 /** @param {import('../src/content/types.js').Problem} p */
@@ -24,6 +25,11 @@ function sheet(p) {
       `- 手牌: ${s.hand}${s.draw ? ` ＋ツモ ${s.draw}` : ''}${s.melds?.length ? ` ／副露 ${s.melds.join(' ')}` : ''}`,
     );
     if (s.discards) lines.push(`- 自分の捨て牌: ${s.discards}`);
+    for (const o of s.others ?? []) {
+      const riichi = o.riichiAt !== undefined ? `（${o.riichiAt + 1}枚目でリーチ）` : '';
+      const melds = o.melds?.length ? ` ／副露 ${o.melds.join(' ')}` : '';
+      lines.push(`- ${WHO[o.who]}の河: ${o.river}${riichi}${melds}`);
+    }
   }
   if (p.win)
     lines.push(`- 和了: ${p.win.tsumo ? 'ツモ' : 'ロン'} ${p.win.tile}${p.win.riichi ? '（リーチ中）' : ''}`);

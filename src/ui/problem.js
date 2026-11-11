@@ -16,6 +16,9 @@ export const HAND_TILE = 24;
 const PALETTE_TILE = 34;
 
 const SEAT_NAMES = { east: '東', south: '南', west: '西', north: '北' };
+const WHO_NAMES = { shimocha: '下家', toimen: '対面', kamicha: '上家' };
+/** 河の牌の幅(px) */
+const RIVER_TILE = 20;
 
 /**
  * @param {Grade} grade
@@ -57,13 +60,37 @@ function sceneInfo(problem) {
 }
 
 /**
+ * 相手の河。リーチ宣言牌は横向きにする。
+ * @param {Problem} problem
+ */
+function othersHtml(problem) {
+  const others = problem.scene?.others ?? [];
+  return others
+    .map((o) => {
+      const tiles = tokensOf(o.river).map((t, i) => {
+        const cls = i === o.riichiAt ? 'river-tile river-tile--riichi' : 'river-tile';
+        return `<span class="${cls}">${tileImg(t, RIVER_TILE)}</span>`;
+      });
+      const riichi = o.riichiAt !== undefined ? '<span class="chip chip--riichi">リーチ</span>' : '';
+      const melds = (o.melds ?? [])
+        .map((m) => `<span class="meld">${rich(`{${m}}`, RIVER_TILE)}</span>`)
+        .join('');
+      return `<section class="river" aria-label="${WHO_NAMES[o.who]}の河">
+<p class="river-head"><span class="river-who">${WHO_NAMES[o.who]}</span>${riichi}${melds}</p>
+<div class="river-tiles">${tiles.join('')}</div>
+</section>`;
+    })
+    .join('');
+}
+
+/**
  * 手牌の列。ask=tile で未回答なら牌がボタンになる。
  * @param {Problem} problem
  * @param {Verdict | null} verdict
  */
 function handHtml(problem, verdict) {
   const s = problem.scene;
-  if (!s) return '';
+  if (!s || (!s.hand && !s.draw && !s.melds?.length && !s.discards)) return '';
   const pickable = problem.ask === 'tile';
   const best = new Set(bestChoices(problem).map((c) => c.answer));
   const picked = pickable ? verdict?.picked[0] : undefined;
@@ -192,6 +219,7 @@ export function problemHtml(problem, verdict, selected) {
         : '';
   return `<article class="problem">
 ${sceneInfo(problem)}
+${othersHtml(problem)}
 <p class="prompt">${rich(problem.prompt)}</p>
 ${handHtml(problem, verdict)}
 ${answerPart}

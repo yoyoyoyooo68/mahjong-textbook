@@ -7,7 +7,17 @@ import { LEVELS, PASS_RATIO, visibleLevels } from '../src/content/index.js';
 import { advance, answer, startLesson, startTest } from '../src/drill/flow.js';
 import { defaultStore, recordLesson } from '../src/storage/store.js';
 import { runHtml, testResultHtml } from '../src/ui/run.js';
-import { chapterHtml, glossaryHtml, homeHtml, mapHtml, nextUp, termSheetHtml } from '../src/ui/screens.js';
+import {
+  chapterHtml,
+  drillsHtml,
+  glossaryHtml,
+  homeHtml,
+  mapHtml,
+  nextUp,
+  settingsHtml,
+  statsHtml,
+  termSheetHtml,
+} from '../src/ui/screens.js';
 import { rich } from '../src/ui/text.js';
 import { SAMPLE_CHAPTER } from './fixtures/sample-chapter.js';
 
@@ -38,7 +48,11 @@ test('公開版では監修前の問題を出さない', () => {
 test('各画面の HTML が作れる', () => {
   const store = defaultStore();
   const now = new Date(2026, 10, 11);
-  assert.match(homeHtml(LEVELS, store, now), /続きから/);
+  assert.match(homeHtml(LEVELS, store, now, 0), /続きから/);
+  assert.match(homeHtml(LEVELS, store, now, 3), /今日の復習 3問/);
+  assert.match(drillsHtml(store, false), /1-2 の章末テストに合格すると開きます/);
+  assert.match(statsHtml(store), /まだ記録がありません/);
+  assert.match(settingsHtml(store), /aria-pressed="false"/);
   assert.match(mapHtml(LEVELS, store), /レベル5 上級/);
   assert.match(chapterHtml(SAMPLE_CHAPTER, store, PASS_RATIO), /4点以上で合格/);
   assert.match(glossaryHtml(), /class="glossary"/);
