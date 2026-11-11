@@ -1,0 +1,20 @@
+{
+  "name": "mahjong-textbook",
+  "version": "0.1.0",
+  "private": true,
+  "description": "麻雀を知らない人が、短い解説とドリルで戦い方を身につけるインタラクティブ教科書",
+  "type": "module",
+  "scripts": {
+    "test": "node --test \"test/**/*.test.js\"",
+    "typecheck": "tsc -p tsconfig.json",
+    "lint": "biome check .",
+    "format": "biome check --write .",
+    "check": "npm run typecheck && npm run lint && npm test",
+    "serve": "python3 -m http.server 5181"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.6.6",
+    "@types/node": "26.6.6",
+    "typescript": "7.0.2"
+  }
+}

@@ -1,0 +1,56 @@
+/* デザイントークン。読みものなので紙の色を基本にし、OS のダークモードにも合わせる。 */
+:root {
+  --bg: #f7f3ea;
+  --surface: #fffdf8;
+  --surface-2: #efe8d8;
+  --line: #ddd3bd;
+  --text: #2a2620;
+  --text-dim: #6b6252;
+  --primary: #1f6b4f;
+  --primary-ink: #ffffff;
+  --best: #1f7a4d;
+  --ok: #8a6a12;
+  --bad: #b23a32;
+  --best-bg: #e3f2e9;
+  --ok-bg: #f6edd2;
+  --bad-bg: #f7e1de;
+
+  /* 牌（tiles.css が使う） */
+  --tile: #fbf5e4;
+  --tile-edge: #c9b98f;
+  --ink: #1a1a1a;
+  --tile-red: #c2352e;
+  --tile-green: #1e7a46;
+  --tile-blue: #1f4e8c;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --radius: 12px;
+
+  --font-ui: system-ui, "Hiragino Sans", "Noto Sans JP", sans-serif;
+  --font-tile: "Hiragino Mincho ProN", "Yu Mincho", "Noto Serif JP", serif;
+
+  color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1b1a17;
+    --surface: #26241f;
+    --surface-2: #322f28;
+    --line: #45403590;
+    --text: #efe9dc;
+    --text-dim: #b3aa98;
+    --primary: #4fb487;
+    --primary-ink: #10251b;
+    --best: #6fcf9a;
+    --ok: #e0bd5a;
+    --bad: #f0857b;
+    --best-bg: #1f3a2c;
+    --ok-bg: #3a321b;
+    --bad-bg: #42241f;
+  }
+}
